@@ -52,4 +52,56 @@ program
     }
   });
 
+program
+  .command('asset')
+  .description('Inspect individual NFT asset')
+  .argument('<contract>', 'NFT contract address')
+  .argument('<tokenId>', 'Token ID')
+  .action(async (contract, tokenId) => {
+    try {
+      console.log(`🔍 Checking NFT: ${contract}/${tokenId}`);
+      
+      const client = new OpenSeaClient(process.env.OPENSEA_API_KEY);
+      const asset = await client.getAsset(contract, tokenId);
+      
+      console.log('\\n🎨 NFT Asset Details');
+      console.log('====================');
+      console.log(`Name: ${asset.name || 'Unnamed'}`);
+      console.log(`Collection: ${asset.collection.name}`);
+      console.log(`Token ID: ${asset.token_id}`);
+      console.log(`Contract: ${asset.asset_contract.address}`);
+      
+      if (asset.description) {
+        console.log(`Description: ${asset.description.substring(0, 100)}...`);
+      }
+      
+      if (asset.traits && asset.traits.length > 0) {
+        console.log('\\n✨ Traits');
+        console.log('==========');
+        asset.traits.forEach(trait => {
+          console.log(`${trait.trait_type}: ${trait.value}`);
+        });
+      }
+      
+      if (asset.last_sale) {
+        console.log('\\n💰 Last Sale');
+        console.log('=============');
+        const price = asset.last_sale.total_price;
+        const token = asset.last_sale.payment_token;
+        if (price && token) {
+          const ethPrice = parseFloat(price) / Math.pow(10, token.decimals);
+          console.log(`Price: ${ethPrice.toFixed(4)} ${token.symbol}`);
+          console.log(`Date: ${new Date(asset.last_sale.created_date).toLocaleDateString()}`);
+        }
+      }
+      
+      if (asset.permalink) {
+        console.log(`\\n🔗 OpenSea: ${asset.permalink}`);
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error: ${error}`);
+    }
+  });
+
 program.parse();
