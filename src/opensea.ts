@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { NFTCollection, NFTCollectionStats, NFTAsset } from './types';
+import { parseAPIError } from './errors';
 
 export class OpenSeaClient {
   private baseURL = 'https://api.opensea.io/api/v1';
@@ -25,10 +26,11 @@ export class OpenSeaClient {
     try {
       const response = await axios.get(`${this.baseURL}/collection/${slug}`, {
         headers: this.getHeaders(),
+        timeout: 10000,
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to fetch collection: ${error}`);
+      throw parseAPIError(error);
     }
   }
 
@@ -36,10 +38,11 @@ export class OpenSeaClient {
     try {
       const response = await axios.get(`${this.baseURL}/collection/${slug}/stats`, {
         headers: this.getHeaders(),
+        timeout: 10000,
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to fetch collection stats: ${error}`);
+      throw parseAPIError(error);
     }
   }
 
@@ -56,10 +59,11 @@ export class OpenSeaClient {
           limit,
           offset,
         },
+        timeout: 10000,
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to fetch assets: ${error}`);
+      throw parseAPIError(error);
     }
   }
 
@@ -67,10 +71,11 @@ export class OpenSeaClient {
     try {
       const response = await axios.get(`${this.baseURL}/asset/${contractAddress}/${tokenId}`, {
         headers: this.getHeaders(),
+        timeout: 10000,
       });
       return response.data;
     } catch (error) {
-      throw new Error(`Failed to fetch asset: ${error}`);
+      throw parseAPIError(error);
     }
   }
 }

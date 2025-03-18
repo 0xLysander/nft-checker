@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import * as dotenv from 'dotenv';
 import { OpenSeaClient } from './opensea';
 import { displayCollectionInfo } from './utils';
+import { NFTCheckerError, handleError } from './errors';
 
 dotenv.config();
 
@@ -44,11 +45,11 @@ program
       displayCollectionInfo(collectionData.collection, statsData.stats);
       
     } catch (error) {
-      console.error(`❌ Error: ${error}`);
-      console.log('\\n💡 Tips:');
-      console.log('- Make sure the contract address or collection slug is correct');
-      console.log('- Set OPENSEA_API_KEY in your .env file for better rate limits');
-      console.log('- Try again in a few seconds if you hit rate limits');
+      if (error instanceof NFTCheckerError) {
+        handleError(error);
+      } else {
+        console.error(`❌ Unexpected error: ${error}`);
+      }
     }
   });
 
@@ -100,7 +101,79 @@ program
       }
       
     } catch (error) {
-      console.error(`❌ Error: ${error}`);
+      if (error instanceof NFTCheckerError) {
+        handleError(error);
+      } else {
+        console.error(`❌ Unexpected error: ${error}`);
+      }
+    }
+  });
+
+program
+  .command('batch')
+  .description('Check multiple collections from a file')
+  .argument('<file>', 'File containing collection slugs or contract addresses (one per line)')
+  .option('-d, --delay <ms>', 'delay between requests in milliseconds', '1000')
+  .action(async (file, options) => {
+    try {
+      const fs = await import('fs');
+      const collections = fs.readFileSync(file, 'utf8')
+        .split('\\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+      
+      if (collections.length === 0) {
+        console.log('❌ No collections found in file');
+        return;
+      }
+      
+      console.log(`🔍 Processing ${collections.length} collections...`);
+      const client = new OpenSeaClient(process.env.OPENSEA_API_KEY);
+      const delay = parseInt(options.delay);
+      
+      for (let i = 0; i < collections.length; i++) {
+        const contract = collections[i];
+        console.log(`\\n[${i + 1}/${collections.length}] Processing: ${contract}`);
+        
+        try {
+          let collectionSlug = contract;
+          if (contract.startsWith('0x')) {
+            const assets = await client.getAssets(contract, 1);
+            if (assets.assets.length === 0) {
+              console.error('❌ No assets found for this contract address');
+              continue;
+            }
+            collectionSlug = assets.assets[0].collection.slug;
+          }
+          
+          const [collectionData, statsData] = await Promise.all([
+            client.getCollection(collectionSlug),
+            client.getCollectionStats(collectionSlug)
+          ]);
+          
+          console.log(`\\n📊 ${collectionData.collection.name}`);
+          console.log(`Floor Price: ${(statsData.stats.floor_price / Math.pow(10, 18)).toFixed(4)} ETH`);
+          console.log(`Total Volume: ${(statsData.stats.total_volume / Math.pow(10, 18)).toFixed(2)} ETH`);
+          console.log(`Owners: ${statsData.stats.num_owners.toLocaleString()}`);
+          
+        } catch (error) {
+          if (error instanceof NFTCheckerError) {
+            console.error(`❌ ${error.message}`);
+          } else {
+            console.error(`❌ Unexpected error: ${error}`);
+          }
+        }
+        
+        if (i < collections.length - 1) {
+          console.log(`⏳ Waiting ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+      
+      console.log('\\n✅ Batch processing complete!');
+      
+    } catch (error) {
+      console.error(`❌ Error reading file: ${error}`);
     }
   });
 
