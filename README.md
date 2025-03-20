@@ -4,10 +4,13 @@ A command-line tool to check NFT collection statistics and floor prices using Op
 
 ## Features
 
-- Check NFT collection stats (floor price, volume, owners, etc.)
-- Support for both contract addresses and collection slugs  
-- Market data and trading volume analytics
-- Clean, formatted console output
+- ✅ Check NFT collection stats (floor price, volume, owners, etc.)
+- ✅ Support for both contract addresses and collection slugs  
+- ✅ Individual NFT asset inspection with traits and sale history
+- ✅ Batch processing of multiple collections
+- ✅ Advanced error handling with helpful tips
+- ✅ Market data and trading volume analytics
+- ✅ Clean, formatted console output
 
 ## Installation
 
@@ -45,6 +48,31 @@ npm run dev check boredapeyachtclub
 
 ```bash  
 npm run dev check 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB
+```
+
+### Inspect Individual NFT Asset
+
+```bash
+npm run dev asset 0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB 1
+npm run dev asset 0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d 1001
+```
+
+### Batch Process Collections
+
+Create a text file with collection slugs or contract addresses (one per line):
+
+```bash
+echo "cryptopunks" > collections.txt
+echo "boredapeyachtclub" >> collections.txt
+echo "mutant-ape-yacht-club" >> collections.txt
+
+npm run dev batch collections.txt
+```
+
+You can also specify a custom delay between requests:
+
+```bash
+npm run dev batch collections.txt --delay 2000
 ```
 
 ## Example Output
